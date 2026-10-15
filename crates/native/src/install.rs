@@ -1513,14 +1513,15 @@ mod tests {
         let folder = dir.path().join("Apps");
         std::fs::create_dir(&folder).unwrap();
         let theirs = folder.join("photocraft.AppImage");
-        let partial = folder.join(".photocraft.AppImage.partial");
+        let personal = dir.path().join("personal.txt");
         std::fs::write(&theirs, "user copy").unwrap();
-        std::fs::write(&partial, "user file").unwrap();
+        std::fs::write(&personal, "user file").unwrap();
+        std::os::unix::fs::symlink(&personal, folder.join(".photocraft.AppImage.partial")).unwrap();
         assert!(linux::install_appimage(&download, "photocraft.AppImage", Some(&folder), None, false).is_err());
         assert_eq!(std::fs::read(&theirs).unwrap(), b"user copy");
         linux::install_appimage(&download, "photocraft.AppImage", Some(&folder), None, true).unwrap();
         assert_eq!(std::fs::read(&theirs).unwrap(), b"new");
-        assert_eq!(std::fs::read(&partial).unwrap(), b"user file");
+        assert_eq!(std::fs::read(&personal).unwrap(), b"user file");
         assert_eq!(std::fs::read_dir(&folder).unwrap().count(), 2, "staging was left behind");
     }
 
