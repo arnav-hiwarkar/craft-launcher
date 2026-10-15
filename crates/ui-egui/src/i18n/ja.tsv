@@ -362,3 +362,6 @@ filter	Installed	インストール済み
 @msg	{path} already exists and wasn't installed by ArtCraft Launcher	{path} は既に存在し、ArtCraft Launcherでインストールされたものではありません
 @msg	couldn't move {path} to Trash ({reason}). Remove it in Finder instead.	{path} をゴミ箱に移動できませんでした（{reason}）。Finderで削除してください。
 	Apps are placed inside this folder.	アプリはこのフォルダー内に配置されます。
+	Replace what's there?	既存の項目を置き換えますか？
+	{path} already exists. Installing {name} will overwrite it.	{path} は既に存在します。{name} をインストールすると上書きされます。
+	Replace	置き換える

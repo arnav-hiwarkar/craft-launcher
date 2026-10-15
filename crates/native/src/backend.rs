@@ -311,7 +311,8 @@ impl NativeBackend {
         });
     }
 
-    fn start_job(&self, app_id: &str, uninstall: bool) {
+    fn start_job(&self, app_id: &str, work: Work) {
+        let uninstall = work == Work::Uninstall;
         let Some(app) = CraftApp::by_id(app_id) else { return };
         log::info!("{}: starting {} job", app.name, if uninstall { "uninstall" } else { "install/update" });
         let stop = Arc::new(Stop::default());
@@ -353,7 +354,18 @@ impl NativeBackend {
                     None => Err(format!("{} isn't installed", app.name)),
                 }
             } else {
-                let r = run_install(app, &shared, &paths, http.as_ref(), platform, &options, existing.as_ref(), record.as_ref(), &stop);
+                let r = run_install(
+                    app,
+                    &shared,
+                    &paths,
+                    http.as_ref(),
+                    platform,
+                    &options,
+                    existing.as_ref(),
+                    record.as_ref(),
+                    &stop,
+                    work == Work::Replace,
+                );
                 // Stopped by the connection rather than by the user: say so, and how to go on.
                 match r {
                     Err(e) if e == PAUSED && stop.check().is_ok() => {
@@ -444,6 +456,13 @@ impl NativeBackend {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Work {
+    Install,
+    Replace,
+    Uninstall,
+}
+
 #[allow(clippy::too_many_arguments)]
 fn run_install(
     app: &CraftApp,
@@ -455,6 +474,7 @@ fn run_install(
     existing: Option<&Installed>,
     record: Option<&crate::manifest::Record>,
     stop: &Stop,
+    replace: bool,
 ) -> Result<String, String> {
     if let Some(msg) = existing.and_then(|e| install::managed_elsewhere(app, e, false)) {
         return Err(msg);
@@ -479,6 +499,10 @@ fn run_install(
             format!("{} {} has no download for {}", app.name, release.version_label(), platform.label())
         }
     })?;
+    if !replace && let Some(path) = install::occupied(app, &asset, kind, existing, record, &options.install_locations, paths)? {
+        shared.emit(Event::Occupied { app: app.id.to_string(), path: path.display().to_string() });
+        return Err(format!("{} already exists", path.display()));
+    }
     let mut last_emit = Instant::now() - Duration::from_secs(1);
     let mut phase = |p: JobPhase| {
         // Downloads report thousands of times; the UI needs ~20 a second.
@@ -488,7 +512,7 @@ fn run_install(
         last_emit = Instant::now();
         shared.emit(Event::Progress { app: app.id.to_string(), phase: p });
     };
-    let mut job = Job { http, paths, stop, phase: &mut phase, install_locations: &options.install_locations };
+    let mut job = Job { http, paths, stop, phase: &mut phase, install_locations: &options.install_locations, replace };
     let mut commit_record = |record: &crate::manifest::Record| {
         let mut manifest = shared.manifest.lock().unwrap_or_else(PoisonError::into_inner);
         let mut updated = manifest.clone();
@@ -925,8 +949,9 @@ impl Backend for NativeBackend {
         match command {
             Command::CheckForUpdates { force } => self.check(force),
             Command::Detect => self.detect_all(),
-            Command::Install { app } => self.start_job(&app, false),
-            Command::Uninstall { app } => self.start_job(&app, true),
+            Command::Install { app } => self.start_job(&app, Work::Install),
+            Command::Replace { app } => self.start_job(&app, Work::Replace),
+            Command::Uninstall { app } => self.start_job(&app, Work::Uninstall),
             Command::Pause { app } => {
                 if let Some(stop) = self.shared.jobs.lock().unwrap_or_else(PoisonError::into_inner).get(&app) {
                     stop.pause();

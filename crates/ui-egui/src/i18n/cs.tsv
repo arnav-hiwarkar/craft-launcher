@@ -327,3 +327,6 @@ filter	Installed	Nainstalováno
 @msg	{path} already exists and wasn't installed by ArtCraft Launcher	{path} již existuje a nebylo nainstalováno aplikací ArtCraft Launcher
 @msg	couldn't move {path} to Trash ({reason}). Remove it in Finder instead.	{path} nelze přesunout do koše ({reason}). Odstraňte položku ve Finderu.
 	Apps are placed inside this folder.	Aplikace se umístí do této složky.
+	Replace what's there?	Nahradit, co tam je?
+	{path} already exists. Installing {name} will overwrite it.	{path} už existuje. Instalace aplikace {name} ho přepíše.
+	Replace	Nahradit

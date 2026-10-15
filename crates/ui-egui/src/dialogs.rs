@@ -26,6 +26,7 @@ impl LauncherUi {
             Dialog::Notes(id) => modal.show(ctx, |ui| close = self.notes_dialog(ui, id)),
             Dialog::ConfirmUninstall(id) => modal.show(ctx, |ui| close = self.uninstall_dialog(ui, id)),
             Dialog::Install { app, folder } => modal.show(ctx, |ui| close = self.install_dialog(ui, app, folder, host)),
+            Dialog::Replace { app, path } => modal.show(ctx, |ui| close = self.replace_dialog(ui, app, path)),
             Dialog::Settings => modal.show(ctx, |ui| close = self.settings_dialog(ui, host)),
             Dialog::LauncherUpdate(r) => modal.show(ctx, |ui| close = self.launcher_update_dialog(ui, r)),
         };
@@ -173,6 +174,31 @@ impl LauncherUi {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if widgets::button(ui, tl!("Uninstall"), Kind::Danger, 110.0).clicked() {
                     self.send(Command::Uninstall { app: id.to_string() });
+                    close = true;
+                }
+                if widgets::button(ui, tl!("Cancel"), Kind::Secondary, 90.0).clicked() {
+                    close = true;
+                }
+            });
+        });
+        close
+    }
+
+    fn replace_dialog(&mut self, ui: &mut egui::Ui, id: &str, path: &str) -> bool {
+        let Some(app) = self.entry(id).map(|e| e.app) else { return true };
+        let t = Tokens::get(ui.ctx());
+        ui.set_width(440.0f32.min(ui.ctx().content_rect().width() - 80.0));
+        Self::title(ui, crate::icons::app(id), tl!("Replace what's there?"), "");
+        ui.label(
+            RichText::new(fmt(tl!("{path} already exists. Installing {name} will overwrite it."), &[("path", path), ("name", app.name)]))
+                .color(t.muted),
+        );
+        ui.add_space(20.0);
+        let mut close = false;
+        ui.horizontal(|ui| {
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if widgets::button(ui, tl!("Replace"), Kind::Danger, 110.0).clicked() {
+                    self.send(Command::Replace { app: id.to_string() });
                     close = true;
                 }
                 if widgets::button(ui, tl!("Cancel"), Kind::Secondary, 90.0).clicked() {

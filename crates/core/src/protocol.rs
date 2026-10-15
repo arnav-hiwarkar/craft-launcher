@@ -25,6 +25,10 @@ pub enum Command {
     Install {
         app: String,
     },
+    /// `Install`, writing over what [`Event::Occupied`] reported.
+    Replace {
+        app: String,
+    },
     Uninstall {
         app: String,
     },
@@ -205,6 +209,12 @@ pub enum Event {
     ReadyToInstall {
         app: String,
         ready: bool,
+    },
+    /// A new install stopped before downloading because `path` already exists and the launcher
+    /// didn't put it there. `Command::Replace` installs over it.
+    Occupied {
+        app: String,
+        path: String,
     },
     /// A job ended: `Ok` carries a short success message, `Err` what went wrong.
     JobFinished {

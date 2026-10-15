@@ -76,6 +76,7 @@ pub(crate) enum Dialog {
     Notes(String),
     ConfirmUninstall(String),
     Install { app: String, folder: String },
+    Replace { app: String, path: String },
     Settings,
     LauncherUpdate(artcraft_launcher_core::Release),
 }
@@ -88,6 +89,7 @@ impl Dialog {
             Dialog::Notes(id) => ("notes", id),
             Dialog::ConfirmUninstall(id) => ("uninstall", id),
             Dialog::Install { app, .. } => ("install", app),
+            Dialog::Replace { app, .. } => ("replace", app),
             Dialog::Settings => ("settings", ""),
             Dialog::LauncherUpdate(r) => ("launcher-update", &r.tag),
         }
@@ -398,6 +400,10 @@ impl LauncherUi {
                 }
                 false
             }
+            Event::Occupied { app, path } => {
+                self.dialog = Some(Dialog::Replace { app, path });
+                false
+            }
             Event::JobFinished { app, result } => {
                 let launcher = app == artcraft_launcher_core::catalog::LAUNCHER_ID;
                 // What the job was doing when it ended says what a cancellation called off.
@@ -421,6 +427,8 @@ impl LauncherUi {
                         self.toast(ctx, tl!("Install cancelled. The download is kept for the next try."), false);
                     }
                     Err(e) if e == INSTALL_CANCELLED => self.toast(ctx, tl!("Install cancelled"), false),
+                    // The Replace dialog says it all.
+                    Err(_) if matches!(&self.dialog, Some(Dialog::Replace { app: a, .. }) if *a == app) => {}
                     Err(e) => self.toast(ctx, e, true),
                 }
                 true

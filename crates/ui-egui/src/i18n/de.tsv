@@ -359,3 +359,6 @@ filter	Installed	Installiert
 @msg	{path} already exists and wasn't installed by ArtCraft Launcher	{path} existiert bereits und wurde nicht von ArtCraft Launcher installiert
 @msg	couldn't move {path} to Trash ({reason}). Remove it in Finder instead.	{path} konnte nicht in den Papierkorb verschoben werden ({reason}). Entfernen Sie es stattdessen im Finder.
 	Apps are placed inside this folder.	Apps werden in diesem Ordner abgelegt.
+	Replace what's there?	Vorhandenes ersetzen?
+	{path} already exists. Installing {name} will overwrite it.	{path} existiert bereits. Die Installation von {name} überschreibt es.
+	Replace	Ersetzen

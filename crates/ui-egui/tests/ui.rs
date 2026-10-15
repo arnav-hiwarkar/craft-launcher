@@ -1687,3 +1687,20 @@ fn with_animations_on_hovering_a_card_animates() {
     let frames = frames_to_hover_the_next_card(&mut h);
     assert!(frames >= 10, "{frames} frames");
 }
+
+#[test]
+fn an_occupied_folder_asks_before_replacing_it() {
+    let path = "/Volumes/Craft Apps/PhotoCraft.app";
+    let mut ev = events();
+    ev.push(Event::Occupied { app: "photocraft".into(), path: path.into() });
+    ev.push(Event::JobFinished { app: "photocraft".into(), result: Err(format!("{path} already exists")) });
+    let (mut h, sent) = harness_with(ev, ViewMode::Grid, egui::Theme::Dark, true, 1.0);
+    h.run_steps(6);
+    h.get_by_label(&format!("{path} already exists. Installing PhotoCraft will overwrite it."));
+    assert!(h.query_by_label(&format!("{path} already exists")).is_none());
+    sent.borrow_mut().clear();
+    h.get_by_label("Replace").click();
+    h.run_steps(2);
+    assert_eq!(*sent.borrow(), [Command::Replace { app: "photocraft".into() }]);
+    assert!(h.query_by_label("Replace").is_none());
+}
